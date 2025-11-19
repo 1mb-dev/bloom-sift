@@ -8,10 +8,22 @@ export interface BloomSiftOptions {
   errorRate: number;
 }
 
+export interface SerializedBloomSift {
+  /** Bit array as base64 string */
+  bits: string;
+  /** Number of bits in the filter */
+  size: number;
+  /** Number of hash functions (k) */
+  hashCount: number;
+  /** Approximate number of items added */
+  count: number;
+}
+
 export class BloomSift {
   private readonly bits: Uint8Array;
   private readonly _size: number;
   private readonly _hashCount: number;
+  private _count: number;
 
   constructor(options: BloomSiftOptions) {
     const { capacity, errorRate } = options;
@@ -27,6 +39,7 @@ export class BloomSift {
     this._size = size;
     this._hashCount = hashCount;
     this.bits = new Uint8Array(Math.ceil(size / 8));
+    this._count = 0;
   }
 
   /** Number of bits in the filter */
@@ -37,6 +50,11 @@ export class BloomSift {
   /** Number of hash functions (k) */
   get hashCount(): number {
     return this._hashCount;
+  }
+
+  /** Approximate number of items added */
+  get count(): number {
+    return this._count;
   }
 
   /**
@@ -50,6 +68,7 @@ export class BloomSift {
       const index = Number((h1 + BigInt(i) * h2) % size);
       this.setBit(index);
     }
+    this._count++;
   }
 
   /**
@@ -67,6 +86,50 @@ export class BloomSift {
       }
     }
     return true;
+  }
+
+  /**
+   * Serialize the filter to a JSON-friendly format
+   */
+  serialize(): SerializedBloomSift {
+    // Convert Uint8Array to base64
+    const bits = Buffer.from(this.bits).toString('base64');
+
+    return {
+      bits,
+      size: this._size,
+      hashCount: this._hashCount,
+      count: this._count,
+    };
+  }
+
+  /**
+   * Restore a filter from serialized data
+   */
+  static deserialize(data: SerializedBloomSift): BloomSift {
+    // Decode base64 to Uint8Array
+    const bits = new Uint8Array(Buffer.from(data.bits, 'base64'));
+
+    // Create instance using internal method
+    return BloomSift.fromRaw(bits, data.size, data.hashCount, data.count);
+  }
+
+  /**
+   * Create a BloomSift instance from raw data (internal use)
+   */
+  private static fromRaw(
+    bits: Uint8Array,
+    size: number,
+    hashCount: number,
+    count: number
+  ): BloomSift {
+    // Create a minimal instance and override properties
+    const instance = Object.create(BloomSift.prototype) as BloomSift;
+    Object.defineProperty(instance, 'bits', { value: bits, writable: false });
+    Object.defineProperty(instance, '_size', { value: size, writable: false });
+    Object.defineProperty(instance, '_hashCount', { value: hashCount, writable: false });
+    instance._count = count;
+    return instance;
   }
 
   /**
