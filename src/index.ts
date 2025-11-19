@@ -19,12 +19,32 @@ export interface SerializedBloomSift {
   count: number;
 }
 
+/**
+ * A space-efficient probabilistic data structure for set membership testing.
+ * Uses 128-bit MurmurHash3 with Kirsch-Mitzenmacher double hashing technique.
+ *
+ * @example
+ * ```typescript
+ * const filter = new BloomSift({ capacity: 1000, errorRate: 0.01 });
+ * filter.add('hello');
+ * filter.has('hello'); // true
+ * filter.has('world'); // false (probably)
+ * ```
+ */
 export class BloomSift {
   private readonly bits: Uint8Array;
   private readonly _size: number;
   private readonly _hashCount: number;
   private _count: number;
 
+  /**
+   * Creates a new Bloom filter with optimal parameters.
+   * @param options - Configuration options
+   * @param options.capacity - Expected number of items to store
+   * @param options.errorRate - Desired false positive rate (0 < errorRate < 1)
+   * @throws {Error} If capacity is not positive
+   * @throws {Error} If errorRate is not between 0 and 1
+   */
   constructor(options: BloomSiftOptions) {
     const { capacity, errorRate } = options;
 
@@ -58,7 +78,8 @@ export class BloomSift {
   }
 
   /**
-   * Add an item to the filter
+   * Adds an item to the filter.
+   * @param item - The item to add (string or binary data)
    */
   add(item: string | Uint8Array): void {
     const [h1, h2] = this.hash128(item);
@@ -72,8 +93,9 @@ export class BloomSift {
   }
 
   /**
-   * Check if an item might be in the filter
-   * @returns true if item might be present, false if definitely not present
+   * Checks if an item might be in the filter.
+   * @param item - The item to check (string or binary data)
+   * @returns `true` if item might be present, `false` if definitely not present
    */
   has(item: string | Uint8Array): boolean {
     const [h1, h2] = this.hash128(item);
@@ -89,7 +111,8 @@ export class BloomSift {
   }
 
   /**
-   * Serialize the filter to a JSON-friendly format
+   * Serializes the filter to a JSON-friendly format for storage or transfer.
+   * @returns Serialized filter data with base64-encoded bits
    */
   serialize(): SerializedBloomSift {
     // Convert Uint8Array to base64
@@ -104,7 +127,9 @@ export class BloomSift {
   }
 
   /**
-   * Restore a filter from serialized data
+   * Restores a filter from serialized data.
+   * @param data - Previously serialized filter data
+   * @returns A new BloomSift instance with restored state
    */
   static deserialize(data: SerializedBloomSift): BloomSift {
     // Decode base64 to Uint8Array
