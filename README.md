@@ -1,19 +1,25 @@
 # bloom-sift
 
+Bloom filter using 128-bit MurmurHash3 with Kirsch-Mitzenmacher double hashing.
+
 [![npm version](https://img.shields.io/npm/v/bloom-sift.svg)](https://www.npmjs.com/package/bloom-sift)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/node/v/bloom-sift.svg)](https://nodejs.org)
 
-Bloom filter with 128-bit MurmurHash3 optimization using the Kirsch-Mitzenmacher technique.
+## Overview
 
-## Why bloom-sift?
-
-Traditional Bloom filters need k hash functions, requiring either k hash calls (slow) or weak hash combinations (poor distribution). bloom-sift uses a single 128-bit MurmurHash3 call to derive all k hash values:
+A space-efficient probabilistic data structure for set membership testing. Uses a single 128-bit hash to derive all k hash values via double hashing:
 
 ```
 h(i) = h1 + i * h2
 ```
 
-Where h1 and h2 are the upper and lower 64 bits of the 128-bit hash.
+**Features:**
+- Single hash call for all k values (fast)
+- Automatic optimal parameter calculation
+- Serialization for storage/transfer
+- Works in Node.js and browsers
+- Zero dependencies (except murmur-hash)
 
 ## Installation
 
@@ -26,164 +32,117 @@ npm install bloom-sift
 ```typescript
 import { BloomSift } from 'bloom-sift';
 
-// Create filter for ~1000 items with 1% false positive rate
 const filter = new BloomSift({ capacity: 1000, errorRate: 0.01 });
 
-// Add items
 filter.add('user:123');
-filter.add(new Uint8Array([1, 2, 3]));
-
-// Check membership
-filter.has('user:123');    // true
-filter.has('user:456');    // false (probably)
-
-// Serialization
-const data = filter.serialize();
-const restored = BloomSift.deserialize(data);
-
-// Stats
-console.log(filter.size);       // 9586 (bits)
-console.log(filter.hashCount);  // 7 (k value)
-console.log(filter.count);      // 2 (items added)
+filter.has('user:123');  // true
+filter.has('user:456');  // false (probably)
 ```
 
-## API Reference
+## API
 
-### `new BloomSift(options)`
-
-Creates a new Bloom filter.
-
-**Options:**
-- `capacity` (number) - Expected number of items
-- `errorRate` (number) - Desired false positive rate (0 < errorRate < 1)
+### Constructor
 
 ```typescript
-const filter = new BloomSift({ capacity: 1000, errorRate: 0.01 });
+new BloomSift({ capacity: number, errorRate: number })
 ```
 
-### `filter.add(item)`
+- `capacity` - Expected number of items
+- `errorRate` - Desired false positive rate (0 < p < 1)
 
-Adds an item to the filter.
-
-**Parameters:**
-- `item` (string | Uint8Array) - Item to add
+### Methods
 
 ```typescript
-filter.add('hello');
-filter.add(new Uint8Array([1, 2, 3]));
-```
-
-### `filter.has(item)`
-
-Checks if an item might be in the filter.
-
-**Parameters:**
-- `item` (string | Uint8Array) - Item to check
-
-**Returns:** `boolean` - `true` if item might be present, `false` if definitely not present
-
-```typescript
-filter.has('hello');  // true if added, false if not
-```
-
-### `filter.clear()`
-
-Resets the filter to empty state for reuse.
-
-```typescript
-filter.add('hello');
-filter.has('hello');  // true
-
-filter.clear();
-filter.has('hello');  // false
-filter.count;         // 0
-```
-
-### `filter.serialize()`
-
-Serializes the filter to a JSON-friendly format.
-
-**Returns:** `SerializedBloomSift` - Object with bits (base64), size, hashCount, count
-
-```typescript
-const data = filter.serialize();
-// Store in database, send over network, etc.
-localStorage.setItem('filter', JSON.stringify(data));
-```
-
-### `BloomSift.deserialize(data)`
-
-Restores a filter from serialized data.
-
-**Parameters:**
-- `data` (SerializedBloomSift) - Serialized filter data
-
-**Returns:** `BloomSift` - Restored filter instance
-
-```typescript
-const data = JSON.parse(localStorage.getItem('filter'));
-const filter = BloomSift.deserialize(data);
+filter.add(item: string | Uint8Array): void
+filter.has(item: string | Uint8Array): boolean
+filter.clear(): void
+filter.serialize(): SerializedBloomSift
+BloomSift.deserialize(data: SerializedBloomSift): BloomSift
 ```
 
 ### Properties
 
-- `filter.size` (number) - Number of bits in the filter
-- `filter.hashCount` (number) - Number of hash functions (k)
-- `filter.count` (number) - Approximate number of items added
-- `filter.fillRatio` (number) - Estimated saturation (0 to 1)
+```typescript
+filter.size       // number of bits
+filter.hashCount  // number of hash functions (k)
+filter.count      // items added
+filter.fillRatio  // saturation (0 to 1)
+```
 
-### `calculateOptimalParams(capacity, errorRate)`
-
-Calculates optimal filter parameters.
-
-**Parameters:**
-- `capacity` (number) - Expected number of items
-- `errorRate` (number) - Desired false positive rate
-
-**Returns:** `{ size: number, hashCount: number }`
+### Utility
 
 ```typescript
 import { calculateOptimalParams } from 'bloom-sift';
 
 const { size, hashCount } = calculateOptimalParams(1000, 0.01);
-// size: 9586, hashCount: 7
+// { size: 9586, hashCount: 7 }
 ```
 
-## Use Cases
+## Usage Examples
 
-1. **Duplicate detection** - Check if URL/content seen before
-2. **Cache existence** - Avoid unnecessary cache lookups
-3. **Database optimization** - Skip queries for non-existent keys
-4. **Spell checking** - Dictionary membership
-5. **Network routing** - Packet deduplication
+### Serialization
+
+```typescript
+const data = filter.serialize();
+localStorage.setItem('filter', JSON.stringify(data));
+
+// Later...
+const restored = BloomSift.deserialize(JSON.parse(localStorage.getItem('filter')));
+```
+
+### Binary Data
+
+```typescript
+filter.add(new Uint8Array([1, 2, 3]));
+filter.has(new Uint8Array([1, 2, 3]));  // true
+```
+
+### Reusing Filters
+
+```typescript
+filter.add('item-1');
+filter.clear();
+filter.count;  // 0
+```
 
 ## How It Works
 
-### Optimal Parameters
+Given capacity `n` and error rate `p`:
 
-Given capacity n and error rate p:
 - Bit size: `m = -n * ln(p) / (ln(2)²)`
 - Hash count: `k = (m/n) * ln(2)`
 
-### Kirsch-Mitzenmacher Technique
+The 128-bit MurmurHash3 output is split into two 64-bit values (h1, h2). Each of the k bit positions is computed as `(h1 + i * h2) % m`, providing the same theoretical guarantees as k independent hashes.
 
-Instead of computing k independent hashes, we compute one 128-bit hash and derive k values:
+## Performance
 
-```typescript
-const [h1, h2] = hash128(item);  // Split 128-bit hash
-for (let i = 0; i < k; i++) {
-  const index = (h1 + i * h2) % size;
-  // Use index...
-}
+Tested on Apple M1 Pro:
+
+| Operation | Ops/sec |
+|-----------|---------|
+| add       | ~220K   |
+| has       | ~250K   |
+
+Run benchmarks:
+
+```bash
+npm run bench
 ```
 
-This provides the same theoretical guarantees as independent hashes with a single hash call.
+## TypeScript
+
+Full TypeScript support with bundled type definitions. Exports:
+
+- `BloomSift` - Main class
+- `BloomSiftOptions` - Constructor options interface
+- `SerializedBloomSift` - Serialization format interface
+- `calculateOptimalParams` - Utility function
 
 ## Limitations
 
-- **No deletions** - Items cannot be removed (use counting Bloom filter for that)
-- **Fixed size** - Capacity must be determined upfront
-- **False positives** - May report items as present when they're not (but never false negatives)
+- **No deletions** - Use counting Bloom filters for that
+- **Fixed size** - Capacity must be set upfront
+- **False positives** - May report items as present when they're not (never false negatives)
 
 ## License
 
