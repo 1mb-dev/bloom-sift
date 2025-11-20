@@ -1,6 +1,6 @@
 {
   "name": "bloom-sift",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Bloom filter with 128-bit MurmurHash3 optimization using Kirsch-Mitzenmacher technique",
   "type": "module",
   "main": "./dist/index.js",

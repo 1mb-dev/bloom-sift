@@ -15,6 +15,8 @@ export interface SerializedBloomSift {
   size: number;
   /** Number of hash functions (k) */
   hashCount: number;
+  /** Expected capacity */
+  capacity: number;
   /** Approximate number of items added */
   count: number;
 }
@@ -137,6 +139,7 @@ export class BloomSift {
       bits,
       size: this._size,
       hashCount: this._hashCount,
+      capacity: this._capacity,
       count: this._count,
     };
   }
@@ -157,6 +160,9 @@ export class BloomSift {
     }
     if (data.hashCount <= 0 || !Number.isInteger(data.hashCount)) {
       throw new Error('Invalid serialized data: hashCount must be a positive integer');
+    }
+    if (data.capacity <= 0 || !Number.isInteger(data.capacity)) {
+      throw new Error('Invalid serialized data: capacity must be a positive integer');
     }
     if (data.count < 0 || !Number.isInteger(data.count)) {
       throw new Error('Invalid serialized data: count must be a non-negative integer');
@@ -185,7 +191,7 @@ export class BloomSift {
     raw.bits = bits;
     raw._size = data.size;
     raw._hashCount = data.hashCount;
-    raw._capacity = data.count || 1;
+    raw._capacity = data.capacity;
     raw._count = data.count;
 
     return instance;

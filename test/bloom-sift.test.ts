@@ -357,6 +357,7 @@ describe('BloomSift', () => {
         bits: 'AA==',
         size: 0,
         hashCount: 7,
+        capacity: 100,
         count: 0
       })).toThrow('size must be a positive integer');
 
@@ -364,6 +365,7 @@ describe('BloomSift', () => {
         bits: 'AA==',
         size: -1,
         hashCount: 7,
+        capacity: 100,
         count: 0
       })).toThrow('size must be a positive integer');
     });
@@ -373,6 +375,7 @@ describe('BloomSift', () => {
         bits: 'AA==',
         size: 8,
         hashCount: 0,
+        capacity: 100,
         count: 0
       })).toThrow('hashCount must be a positive integer');
     });
@@ -382,6 +385,7 @@ describe('BloomSift', () => {
         bits: 'AA==',
         size: 8,
         hashCount: 7,
+        capacity: 100,
         count: -1
       })).toThrow('count must be a non-negative integer');
     });
@@ -391,8 +395,19 @@ describe('BloomSift', () => {
         bits: 'AA==', // 1 byte
         size: 100,    // expects 13 bytes
         hashCount: 7,
+        capacity: 100,
         count: 0
       })).toThrow('expected 13 bytes, got 1');
+    });
+
+    it('should reject invalid capacity', () => {
+      expect(() => BloomSift.deserialize({
+        bits: 'AA==',
+        size: 8,
+        hashCount: 7,
+        capacity: 0,
+        count: 0
+      })).toThrow('capacity must be a positive integer');
     });
   });
 });
