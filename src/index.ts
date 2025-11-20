@@ -35,6 +35,7 @@ export class BloomSift {
   private readonly bits: Uint8Array;
   private readonly _size: number;
   private readonly _hashCount: number;
+  private readonly _capacity: number;
   private _count: number;
 
   /**
@@ -58,6 +59,7 @@ export class BloomSift {
     const { size, hashCount } = calculateOptimalParams(capacity, errorRate);
     this._size = size;
     this._hashCount = hashCount;
+    this._capacity = capacity;
     this.bits = new Uint8Array(Math.ceil(size / 8));
     this._count = 0;
   }
@@ -75,6 +77,11 @@ export class BloomSift {
   /** Approximate number of items added */
   get count(): number {
     return this._count;
+  }
+
+  /** Estimated fill ratio (0 to 1). Approaches 1 as filter saturates. */
+  get fillRatio(): number {
+    return Math.min(1, this._count / this._capacity);
   }
 
   /**
@@ -111,12 +118,21 @@ export class BloomSift {
   }
 
   /**
+   * Resets the filter to empty state.
+   */
+  clear(): void {
+    this.bits.fill(0);
+    this._count = 0;
+  }
+
+  /**
    * Serializes the filter to a JSON-friendly format for storage or transfer.
    * @returns Serialized filter data with base64-encoded bits
    */
   serialize(): SerializedBloomSift {
-    // Convert Uint8Array to base64
-    const bits = Buffer.from(this.bits).toString('base64');
+    // Convert Uint8Array to base64 (browser + Node compatible)
+    const binaryString = Array.from(this.bits, (byte) => String.fromCharCode(byte)).join('');
+    const bits = btoa(binaryString);
 
     return {
       bits,
@@ -130,30 +146,50 @@ export class BloomSift {
    * Restores a filter from serialized data.
    * @param data - Previously serialized filter data
    * @returns A new BloomSift instance with restored state
+   * @throws {Error} If serialized data is invalid or corrupted
    */
   static deserialize(data: SerializedBloomSift): BloomSift {
-    // Decode base64 to Uint8Array
-    const bits = new Uint8Array(Buffer.from(data.bits, 'base64'));
+    // Validate input
+    if (!data || typeof data.bits !== 'string') {
+      throw new Error('Invalid serialized data: missing bits');
+    }
+    if (data.size <= 0 || !Number.isInteger(data.size)) {
+      throw new Error('Invalid serialized data: size must be a positive integer');
+    }
+    if (data.hashCount <= 0 || !Number.isInteger(data.hashCount)) {
+      throw new Error('Invalid serialized data: hashCount must be a positive integer');
+    }
+    if (data.count < 0 || !Number.isInteger(data.count)) {
+      throw new Error('Invalid serialized data: count must be a non-negative integer');
+    }
 
-    // Create instance using internal method
-    return BloomSift.fromRaw(bits, data.size, data.hashCount, data.count);
-  }
+    // Decode base64 to Uint8Array (browser + Node compatible)
+    const binaryString = atob(data.bits);
+    const bits = Uint8Array.from(binaryString, (char) => char.charCodeAt(0));
 
-  /**
-   * Create a BloomSift instance from raw data (internal use)
-   */
-  private static fromRaw(
-    bits: Uint8Array,
-    size: number,
-    hashCount: number,
-    count: number
-  ): BloomSift {
-    // Create a minimal instance and override properties
-    const instance = Object.create(BloomSift.prototype) as BloomSift;
-    Object.defineProperty(instance, 'bits', { value: bits, writable: false });
-    Object.defineProperty(instance, '_size', { value: size, writable: false });
-    Object.defineProperty(instance, '_hashCount', { value: hashCount, writable: false });
-    instance._count = count;
+    // Validate bit array size
+    const expectedBytes = Math.ceil(data.size / 8);
+    if (bits.length !== expectedBytes) {
+      throw new Error(
+        `Invalid serialized data: expected ${expectedBytes} bytes, got ${bits.length}`
+      );
+    }
+
+    // Create instance with direct assignment
+    const instance = new BloomSift({ capacity: 1, errorRate: 0.5 });
+    const raw = instance as unknown as {
+      bits: Uint8Array;
+      _size: number;
+      _hashCount: number;
+      _capacity: number;
+      _count: number;
+    };
+    raw.bits = bits;
+    raw._size = data.size;
+    raw._hashCount = data.hashCount;
+    raw._capacity = data.count || 1;
+    raw._count = data.count;
+
     return instance;
   }
 

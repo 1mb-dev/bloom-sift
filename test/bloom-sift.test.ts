@@ -274,4 +274,113 @@ describe('BloomSift', () => {
       expect(filter.has('test')).toBe(true);
     });
   });
+
+  describe('clear', () => {
+    it('should reset filter to empty state', () => {
+      const filter = new BloomSift({ capacity: 1000, errorRate: 0.01 });
+
+      filter.add('hello');
+      filter.add('world');
+      expect(filter.count).toBe(2);
+      expect(filter.has('hello')).toBe(true);
+
+      filter.clear();
+
+      expect(filter.count).toBe(0);
+      expect(filter.has('hello')).toBe(false);
+      expect(filter.has('world')).toBe(false);
+    });
+
+    it('should allow reuse after clear', () => {
+      const filter = new BloomSift({ capacity: 1000, errorRate: 0.01 });
+
+      filter.add('first');
+      filter.clear();
+      filter.add('second');
+
+      expect(filter.count).toBe(1);
+      expect(filter.has('first')).toBe(false);
+      expect(filter.has('second')).toBe(true);
+    });
+  });
+
+  describe('fillRatio', () => {
+    it('should return 0 for empty filter', () => {
+      const filter = new BloomSift({ capacity: 1000, errorRate: 0.01 });
+      expect(filter.fillRatio).toBe(0);
+    });
+
+    it('should increase as items are added', () => {
+      const filter = new BloomSift({ capacity: 100, errorRate: 0.01 });
+
+      filter.add('one');
+      expect(filter.fillRatio).toBe(0.01);
+
+      for (let i = 0; i < 49; i++) {
+        filter.add(`item-${i}`);
+      }
+      expect(filter.fillRatio).toBe(0.5);
+    });
+
+    it('should cap at 1 when over capacity', () => {
+      const filter = new BloomSift({ capacity: 10, errorRate: 0.01 });
+
+      for (let i = 0; i < 20; i++) {
+        filter.add(`item-${i}`);
+      }
+
+      expect(filter.fillRatio).toBe(1);
+    });
+  });
+
+  describe('deserialize validation', () => {
+    it('should reject missing bits', () => {
+      // @ts-expect-error Testing invalid input
+      expect(() => BloomSift.deserialize({}))
+        .toThrow('Invalid serialized data: missing bits');
+    });
+
+    it('should reject invalid size', () => {
+      expect(() => BloomSift.deserialize({
+        bits: 'AA==',
+        size: 0,
+        hashCount: 7,
+        count: 0
+      })).toThrow('size must be a positive integer');
+
+      expect(() => BloomSift.deserialize({
+        bits: 'AA==',
+        size: -1,
+        hashCount: 7,
+        count: 0
+      })).toThrow('size must be a positive integer');
+    });
+
+    it('should reject invalid hashCount', () => {
+      expect(() => BloomSift.deserialize({
+        bits: 'AA==',
+        size: 8,
+        hashCount: 0,
+        count: 0
+      })).toThrow('hashCount must be a positive integer');
+    });
+
+    it('should reject invalid count', () => {
+      expect(() => BloomSift.deserialize({
+        bits: 'AA==',
+        size: 8,
+        hashCount: 7,
+        count: -1
+      })).toThrow('count must be a non-negative integer');
+    });
+
+    it('should reject mismatched bit array size', () => {
+      expect(() => BloomSift.deserialize({
+        bits: 'AA==', // 1 byte
+        size: 100,    // expects 13 bytes
+        hashCount: 7,
+        count: 0
+      })).toThrow('expected 13 bytes, got 1');
+    });
+  });
 });

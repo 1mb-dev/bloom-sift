@@ -86,6 +86,19 @@ Checks if an item might be in the filter.
 filter.has('hello');  // true if added, false if not
 ```
 
+### `filter.clear()`
+
+Resets the filter to empty state for reuse.
+
+```typescript
+filter.add('hello');
+filter.has('hello');  // true
+
+filter.clear();
+filter.has('hello');  // false
+filter.count;         // 0
+```
+
 ### `filter.serialize()`
 
 Serializes the filter to a JSON-friendly format.
@@ -117,6 +130,7 @@ const filter = BloomSift.deserialize(data);
 - `filter.size` (number) - Number of bits in the filter
 - `filter.hashCount` (number) - Number of hash functions (k)
 - `filter.count` (number) - Approximate number of items added
+- `filter.fillRatio` (number) - Estimated saturation (0 to 1)
 
 ### `calculateOptimalParams(capacity, errorRate)`
 
