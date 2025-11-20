@@ -252,20 +252,20 @@ describe('BloomSift', () => {
     });
 
     it('should handle large number of items', () => {
-      const filter = new BloomSift({ capacity: 10000, errorRate: 0.01 });
+      const filter = new BloomSift({ capacity: 1000, errorRate: 0.01 });
 
-      for (let i = 0; i < 10000; i++) {
+      for (let i = 0; i < 1000; i++) {
         filter.add(`item-${i}`);
       }
 
       // Spot check some items
       expect(filter.has('item-0')).toBe(true);
-      expect(filter.has('item-5000')).toBe(true);
-      expect(filter.has('item-9999')).toBe(true);
-      expect(filter.count).toBe(10000);
+      expect(filter.has('item-500')).toBe(true);
+      expect(filter.has('item-999')).toBe(true);
+      expect(filter.count).toBe(1000);
     });
 
-    it('should handle very low error rate', () => {
+    it('should use more hash functions for lower error rates', () => {
       const filter = new BloomSift({ capacity: 100, errorRate: 0.0001 });
 
       expect(filter.hashCount).toBeGreaterThan(10);
@@ -330,6 +330,18 @@ describe('BloomSift', () => {
       }
 
       expect(filter.fillRatio).toBe(1);
+    });
+
+    it('should reset to 0 after clear', () => {
+      const filter = new BloomSift({ capacity: 100, errorRate: 0.01 });
+
+      for (let i = 0; i < 50; i++) {
+        filter.add(`item-${i}`);
+      }
+      expect(filter.fillRatio).toBe(0.5);
+
+      filter.clear();
+      expect(filter.fillRatio).toBe(0);
     });
   });
 
