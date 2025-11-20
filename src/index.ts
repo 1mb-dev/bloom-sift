@@ -130,7 +130,6 @@ export class BloomSift {
    * @returns Serialized filter data with base64-encoded bits
    */
   serialize(): SerializedBloomSift {
-    // Convert Uint8Array to base64 (browser + Node compatible)
     const binaryString = Array.from(this.bits, (byte) => String.fromCharCode(byte)).join('');
     const bits = btoa(binaryString);
 
@@ -163,7 +162,6 @@ export class BloomSift {
       throw new Error('Invalid serialized data: count must be a non-negative integer');
     }
 
-    // Decode base64 to Uint8Array (browser + Node compatible)
     const binaryString = atob(data.bits);
     const bits = Uint8Array.from(binaryString, (char) => char.charCodeAt(0));
 
@@ -175,7 +173,7 @@ export class BloomSift {
       );
     }
 
-    // Create instance with direct assignment
+    // Create instance and override readonly properties
     const instance = new BloomSift({ capacity: 1, errorRate: 0.5 });
     const raw = instance as unknown as {
       bits: Uint8Array;
