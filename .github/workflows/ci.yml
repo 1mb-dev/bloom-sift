@@ -1,47 +1,7 @@
 name: CI
 
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+on: [push, pull_request]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [20.x, 22.x]
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Test
-        run: npm test
-
-      - name: Test with coverage
-        if: matrix.node-version == '22.x'
-        run: npm run test:coverage
-
-      - name: Upload coverage
-        if: matrix.node-version == '22.x'
-        uses: codecov/codecov-action@v4
-        with:
-          file: ./coverage/lcov.info
-          fail_ci_if_error: false
+  ci:
+    uses: 1mb-dev/.github/.github/workflows/ci-node.yml@main
