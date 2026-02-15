@@ -43,12 +43,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vnykmshr/bloom-sift.git"
+    "url": "git+https://github.com/1mb-dev/bloom-sift.git"
   },
   "bugs": {
-    "url": "https://github.com/vnykmshr/bloom-sift/issues"
+    "url": "https://github.com/1mb-dev/bloom-sift/issues"
   },
-  "homepage": "https://github.com/vnykmshr/bloom-sift#readme",
+  "homepage": "https://github.com/1mb-dev/bloom-sift#readme",
   "engines": {
     "node": ">=20.0.0"
   },
