@@ -21,6 +21,23 @@ h(i) = h1 + i * h2
 - Works in Node.js and browsers
 - Zero dependencies (except murmur-hash)
 
+## When to Use This
+
+Use bloom-sift when you need fast, space-efficient set membership testing and can tolerate a small false positive rate.
+
+**Choose bloom-sift over [bloom-filters](https://www.npmjs.com/package/bloom-filters) when:**
+- You want a focused Bloom filter without counting filters, cuckoo filters, or other data structures bundled in
+- You want automatic optimal parameter calculation from capacity and error rate
+- You need browser compatibility alongside Node.js
+
+**Choose bloom-filters instead when:**
+- You need counting Bloom filters (support for deletions)
+- You need cuckoo filters or other probabilistic data structures in the same package
+
+**You probably don't need a Bloom filter when:**
+- Your set fits comfortably in memory as a `Set` -- Bloom filters trade accuracy for space
+- You need exact membership testing with zero false positives
+
 ## Installation
 
 ```bash
