@@ -61,7 +61,7 @@
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.47.0",
-    "vitest": "^4.0.10"
+    "vitest": "^5.0.1"
   },
   "dependencies": {
     "murmur-hash": "^2.0.0"
