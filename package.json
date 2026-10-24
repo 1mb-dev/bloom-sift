@@ -50,7 +50,7 @@
   },
   "homepage": "https://github.com/1mb-dev/bloom-sift#readme",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
