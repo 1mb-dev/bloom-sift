@@ -55,13 +55,13 @@
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@types/node": "^25.2.3",
-    "@vitest/coverage-v8": "^4.0.10",
+    "@vitest/coverage-v8": "^5.0.5",
     "prettier": "^3.6.2",
     "tsup": "^8.5.1",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.47.0",
-    "vitest": "^4.0.10"
+    "vitest": "^5.0.5"
   },
   "dependencies": {
     "murmur-hash": "^2.0.0"
